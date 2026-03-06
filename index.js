@@ -298,3 +298,120 @@ let myData = [
       "total_millions": "52"
     }
   ]
+  
+  
+// Shared setup
+const frequencyMap = d3.rollup(myData, v => v.length, d => d.family);
+const familyData = Array.from(frequencyMap, ([family, count]) => ({ family, count }))
+  .sort((a, b) => b.count - a.count);
+const families = familyData.map(d => d.family);
+const colorScale = d3.scaleOrdinal(d3.schemeTableau10).domain(families);
+
+// Bar Chart 
+const margin = { top: 20, right: 20, bottom: 120, left: 50 };
+const width  = 800 - margin.left - margin.right;
+const height = 400 - margin.top  - margin.bottom;
+
+const svg = d3.select("#bar-chart")
+  .append("svg")
+  .attr("width",  width  + margin.left + margin.right)
+  .attr("height", height + margin.top  + margin.bottom)
+  .append("g") 
+  .attr("transform", `translate(${margin.left},${margin.top})`);
+
+const xScale = d3.scaleBand().domain(families).range([0, width]).padding(0.3);
+const yScale = d3.scaleLinear().domain([0, d3.max(familyData, d => d.count) + 1]).range([height, 0]);
+
+// X axis
+svg.append("g")
+  .attr("transform", `translate(0,${height})`)
+  .call(d3.axisBottom(xScale))
+  .selectAll("text")
+    .attr("transform", "rotate(-40)")
+    .style("text-anchor", "end");
+
+// X axis label
+svg.append("text")
+  .attr("x", width / 2)
+  .attr("y", height + margin.bottom - 10)
+  .attr("text-anchor", "middle")
+  .text("Language Family");
+
+// Y axis
+svg.append("g").call(d3.axisLeft(yScale).ticks(10).tickFormat(d3.format("d")));
+
+// Y axis label
+svg.append("text")
+  .attr("transform", "rotate(-90)")
+  .attr("x", -height / 2)
+  .attr("y", -40)
+  .attr("text-anchor", "middle")
+  .text("Number of Languages");
+
+// Bars
+const bars = svg.selectAll(".bar")
+  .data(familyData)
+  .enter().append("rect")
+    .attr("class", "bar")
+    .attr("x",      d => xScale(d.family))
+    .attr("y",      d => yScale(d.count))
+    .attr("width",  xScale.bandwidth())
+    .attr("height", d => height - yScale(d.count))
+    .attr("fill",   d => colorScale(d.family));
+
+bars.on("click", function() {
+  const isHighlighted = d3.select(this).classed("highlighted");
+  bars.classed("highlighted", false);
+  d3.select(this).classed("highlighted", !isHighlighted);
+});
+
+// Pie Chart
+const pieSize   = 400;
+const pieRadius = pieSize / 2 - 20;
+const total     = familyData.reduce((s, d) => s + d.count, 0);
+
+const pieSvg = d3.select("#pie-chart")
+  .append("svg")
+  .attr("width",  pieSize)
+  .attr("height", pieSize)
+  .append("g")
+  .attr("transform", `translate(${pieSize / 2}, ${pieSize / 2})`);
+
+const pie  = d3.pie().value(d => d.count).sort(null);
+const arc  = d3.arc().innerRadius(0).outerRadius(pieRadius);
+const pieData = pie(familyData);
+
+const slices = pieSvg.selectAll(".slice")
+  .data(pieData)
+  .enter().append("g")
+    .attr("class", "slice");
+
+slices.append("path")
+  .attr("d", arc)
+  .attr("fill",         d => colorScale(d.data.family))
+  .attr("stroke",       "white")
+  .attr("stroke-width", 1);
+
+// Labels
+slices.append("text")
+  .attr("transform", d => `translate(${arc.centroid(d)})`)
+  .attr("text-anchor", "middle")
+  .attr("font-size", "11px")
+  .text(d => {
+    const pct = (d.data.count / total * 100).toFixed(0);
+    return pct >= 5 ? `${pct}%` : "";
+  });
+
+// Click info
+slices.selectAll("path").on("click", function(event, d) {
+  const pct = (d.data.count / total * 100).toFixed(1);
+  const isActive = d3.select(this).classed("active");
+  d3.selectAll(".slice path").classed("active", false);
+  if (!isActive) {
+    d3.select(this).classed("active", true);
+    document.getElementById("pie-info").textContent =
+      `${d.data.family}: ${pct}% (${d.data.count} of ${total} languages)`;
+  } else {
+    document.getElementById("pie-info").textContent = "Click a slice to see details";
+  }
+});

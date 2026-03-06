@@ -1,0 +1,26 @@
+body {
+  font-family: sans-serif;
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+.bar {
+  cursor: pointer;
+}
+
+.bar.highlighted {
+  stroke: black;
+  stroke-width: 2px;
+  opacity: 0.7;
+}
+
+.slice path {
+  cursor: pointer;
+}
+
+.slice path.active {
+  opacity: 0.7;
+  stroke: black;
+  stroke-width: 2px;
+}
