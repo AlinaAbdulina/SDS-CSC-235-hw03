@@ -300,7 +300,7 @@ let myData = [
   ]
   
   
-// Shared setup
+// Setup
 const frequencyMap = d3.rollup(myData, v => v.length, d => d.family);
 const familyData = Array.from(frequencyMap, ([family, count]) => ({ family, count }))
   .sort((a, b) => b.count - a.count);
@@ -348,6 +348,14 @@ svg.append("text")
   .attr("text-anchor", "middle")
   .text("Number of Languages");
 
+// Bar chart title
+svg.append("text")
+  .attr("x", width / 2)
+  .attr("y", -5)
+  .attr("text-anchor", "middle")
+  .style("font-weight", "bold")
+  .text("Language Families by Frequency");
+
 // Bars
 const bars = svg.selectAll(".bar")
   .data(familyData)
@@ -373,9 +381,18 @@ const total     = familyData.reduce((s, d) => s + d.count, 0);
 const pieSvg = d3.select("#pie-chart")
   .append("svg")
   .attr("width",  pieSize)
-  .attr("height", pieSize)
+  .attr("height", pieSize + 30)
   .append("g")
-  .attr("transform", `translate(${pieSize / 2}, ${pieSize / 2})`);
+  .attr("transform", `translate(${pieSize / 2}, ${pieSize / 2 + 30})`);
+
+// Pie chart title
+d3.select("#pie-chart svg")
+  .append("text")
+  .attr("x", pieSize / 2)
+  .attr("y", 20)
+  .attr("text-anchor", "middle")
+  .style("font-weight", "bold")
+  .text("Proportion of Languages by Family");
 
 const pie  = d3.pie().value(d => d.count).sort(null);
 const arc  = d3.arc().innerRadius(0).outerRadius(pieRadius);
@@ -399,7 +416,7 @@ slices.append("text")
   .attr("font-size", "11px")
   .text(d => {
     const pct = (d.data.count / total * 100).toFixed(0);
-    return pct >= 5 ? `${pct}%` : "";
+    return pct >= 3 ? `${pct}%` : "";
   });
 
 // Click info
